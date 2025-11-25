@@ -10,7 +10,7 @@ import {
   ListChecks,
   CreditCard,
   FileText,
-  Users
+  Users,
 } from "lucide-react";
 
 const menuItems = [
@@ -18,21 +18,21 @@ const menuItems = [
   {
     label: "Student Registration",
     href: "/student-registration",
-    icon: UserPlus
+    icon: UserPlus,
   },
   {
     label: "Student Registration List",
     href: "/student-registration-list",
-    icon: ListChecks
+    icon: ListChecks,
   },
   { label: "Sub Admin Form", href: "/sub-admin", icon: Users },
   { label: "Make Payment", href: "/make-payment", icon: CreditCard },
   {
     label: "Transactions List",
     href: "/transactions",
-    icon: FileText
+    icon: FileText,
   },
-  { label: "Employee Logins", href: "/employee-logins", icon: Users }
+  { label: "Employee Logins", href: "/employee-logins", icon: Users },
 ];
 
 interface SidebarProps {
@@ -53,7 +53,7 @@ export function Sidebar({ collapsed, mobile = false }: SidebarProps) {
             "h-full w-full bg-slate-50"
           : // Desktop sidebar
           collapsed
-          ? "hidden h-screen w-16 border-r border-slate-200 bg-white/95 shadow-sm lg:flex"
+          ? "hidden h-screen w-16 border-r border-slate-200 bg-white/95 shadow-sm lg:flex object-cover"
           : "hidden h-screen w-64 border-r border-slate-200 bg-white/95 shadow-sm lg:flex"
       )}
     >

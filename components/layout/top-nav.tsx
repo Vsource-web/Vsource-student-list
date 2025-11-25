@@ -8,7 +8,7 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
-  DropdownMenuItem
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Sidebar as SidebarInner } from "./sidebar";
 import { authService } from "@/services/auth.service";
@@ -62,13 +62,11 @@ export function TopNav({ onToggleSidebar }: TopNavProps) {
             </DropdownMenuTrigger>
 
             <DropdownMenuContent className="w-44">
-              <DropdownMenuItem>{user?.name}</DropdownMenuItem>
-              <DropdownMenuItem>{user?.role}</DropdownMenuItem>
               <DropdownMenuItem onClick={handleLogout}>
-                Logout
+                {user?.name} Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu> 
         </div>
       </header>
 
