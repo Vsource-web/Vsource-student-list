@@ -8,29 +8,30 @@ import { Sidebar } from "@/components/layout/sidebar";
 import {
   SubAdminModal,
   FormState,
-  FormErrors
+  FormErrors,
 } from "@/components/subadmin/SubAdminModal";
 import { SubAdminTable } from "@/components/subadmin/SubAdminTable";
+import { TopNav } from "@/components/layout/top-nav";
 
-const TopNav: React.FC<{
-  sidebarCollapsed: boolean;
-  onToggleSidebar: () => void;
-}> = ({ sidebarCollapsed, onToggleSidebar }) => {
-  return (
-    <header className="border-b bg-white py-3 px-4">
-      <div className="mx-auto flex max-w-6xl items-center justify-between">
-        <button
-          onClick={onToggleSidebar}
-          aria-label="Toggle sidebar"
-          className="rounded-md p-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-        >
-          {sidebarCollapsed ? "Open sidebar" : "Close sidebar"}
-        </button>
-        <div className="text-sm text-slate-700">Sub Admins</div>
-      </div>
-    </header>
-  );
-};
+// const TopNav: React.FC<{
+//   sidebarCollapsed: boolean;
+//   onToggleSidebar: () => void;
+// }> = ({ sidebarCollapsed, onToggleSidebar }) => {
+//   return (
+//     <header className="border-b bg-white py-3 px-4">
+//       <div className="mx-auto flex max-w-6xl items-center justify-between">
+//         <button
+//           onClick={onToggleSidebar}
+//           aria-label="Toggle sidebar"
+//           className="rounded-md p-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+//         >
+//           {sidebarCollapsed ? "Open sidebar" : "Close sidebar"}
+//         </button>
+//         <div className="text-sm text-slate-700">Sub Admins</div>
+//       </div>
+//     </header>
+//   );
+// };
 
 const emptyForm: FormState = {
   staffName: "",
@@ -38,7 +39,7 @@ const emptyForm: FormState = {
   mobile: "",
   email: "",
   password: "",
-  branchCode: ""
+  branchCode: "",
 };
 
 export default function SubAdminPage() {
@@ -101,7 +102,7 @@ export default function SubAdminPage() {
       mobile: item.mobile,
       email: item.email,
       password: item.password,
-      branchCode: item.branchCode as BranchCode
+      branchCode: item.branchCode as BranchCode,
     });
     setErrors({});
     setModalOpen(true);
@@ -133,7 +134,7 @@ export default function SubAdminPage() {
           mobile: form.mobile,
           email: form.email,
           password: form.password,
-          branchCode: form.branchCode as BranchCode
+          branchCode: form.branchCode as BranchCode,
         });
 
         if (updated) {
@@ -148,7 +149,7 @@ export default function SubAdminPage() {
           mobile: form.mobile,
           email: form.email,
           password: form.password,
-          branchCode: form.branchCode as BranchCode
+          branchCode: form.branchCode as BranchCode,
         });
         setSubAdmins((prev) => [...prev, created]);
       }
@@ -175,10 +176,7 @@ export default function SubAdminPage() {
   return (
     <div className="flex min-h-screen bg-slate-100">
       {/* Sidebar */}
-      <Sidebar
-        collapsed={collapsed}
-        onToggle={() => setCollapsed((c) => !c)}
-      />
+      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
 
       {/* Main content area */}
       <div className="flex min-h-screen flex-1 flex-col">
