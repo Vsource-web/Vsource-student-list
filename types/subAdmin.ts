@@ -1,6 +1,5 @@
 // src/types/subAdmin.ts
 
-// Match Prisma enum Branch
 export type BranchCode =
   | "HYDERABAD_VS_HYD"
   | "VIJAYAWADA_VS_BZA"
@@ -31,18 +30,16 @@ export const BRANCH_OPTIONS: BranchOption[] = [
   { code: "GEORGIA", label: "Georgia" }
 ];
 
-// Frontend shape mapped from Prisma User
-// Prisma User:
-//  employeeId, name, email, phone, password, branch, role, loginType, date/time...
 export type SubAdmin = {
   id: string;
   employeeId: string;
-  staffName: string;       // Prisma: name
-  mobile: string;          // Prisma: phone
+  name: string;
   email: string;
-  password: string;
-  branchCode: BranchCode;  // Prisma: branch
+  phone: string;
+  branch: BranchCode;
   role?: string;
   loginType?: string;
-  createdAt: string;       // ISO string
+  password?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };

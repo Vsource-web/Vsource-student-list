@@ -19,79 +19,61 @@ export const SubAdminTable: React.FC<Props> = ({
   items,
   loading,
   onEdit,
-  onDelete
+  onDelete,
 }) => {
   return (
     <div className="mt-6 overflow-x-auto rounded-xl border border-slate-200 bg-white">
       <table className="min-w-full text-left text-sm">
         <thead className="bg-slate-50">
-          <tr className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <tr className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
             <th className="px-4 py-3">S.No</th>
             <th className="px-4 py-3">Employee ID</th>
             <th className="px-4 py-3">Staff Name</th>
-            <th className="px-4 py-3">Mobile Number</th>
+            <th className="px-4 py-3">Mobile</th>
             <th className="px-4 py-3">Email</th>
             <th className="px-4 py-3">Branch</th>
             <th className="px-4 py-3 text-center">Actions</th>
           </tr>
         </thead>
+
         <tbody>
           {loading ? (
             <tr>
-              <td
-                colSpan={7}
-                className="px-4 py-6 text-center text-sm text-slate-600"
-              >
+              <td colSpan={7} className="py-5 text-center text-sm">
                 Loading sub admins...
               </td>
             </tr>
           ) : items.length === 0 ? (
             <tr>
-              <td
-                colSpan={7}
-                className="px-4 py-6 text-center text-sm text-slate-600"
-              >
-                No sub admins added yet.
+              <td colSpan={7} className="py-5 text-center text-sm">
+                No sub admins found.
               </td>
             </tr>
           ) : (
             items.map((item, idx) => (
-              <tr
-                key={item.id}
-                className="border-t last:border-b hover:bg-slate-50/60"
-              >
-                <td className="px-4 py-3 text-xs text-slate-500">
-                  {idx + 1}
-                </td>
-                <td className="px-4 py-3 text-sm font-medium text-slate-900">
-                  {item.employeeId}
-                </td>
-                <td className="px-4 py-3 text-sm font-medium text-slate-900">
-                  {item.staffName}
-                </td>
-                <td className="px-4 py-3 text-sm text-slate-800">
-                  {item.mobile}
-                </td>
-                <td className="px-4 py-3 text-sm text-slate-800">
-                  {item.email}
-                </td>
-                <td className="px-4 py-3 text-sm text-slate-800">
-                  <span className="font-semibold">{item.branchCode}</span>
+              <tr key={item.id} className="border-t hover:bg-slate-100">
+                <td className="px-4 py-3">{idx + 1}</td>
+                <td className="px-4 py-3">{item.employeeId}</td>
+                <td className="px-4 py-3 font-medium">{item.name}</td>
+                <td className="px-4 py-3">{item.phone}</td>
+                <td className="px-4 py-3">{item.email}</td>
+                <td className="px-4 py-3">
+                  <div className="font-semibold">{item.branch}</div>
                   <div className="text-xs text-slate-500">
-                    {getBranchLabel(item.branchCode)}
+                    {getBranchLabel(item.branch)}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-center text-sm">
-                  <div className="inline-flex gap-2">
+                <td className="px-4 py-3 text-center">
+                  <div className="flex justify-center gap-2">
                     <button
                       onClick={() => onEdit(item)}
-                      className="rounded-lg bg-blue-600 px-3 py-1 text-xs font-semibold text-white shadow-sm hover:bg-blue-700"
+                      className="bg-blue-600 text-white text-xs px-3 py-1 rounded-lg hover:bg-blue-700"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => onDelete(item)}
-                      className="rounded-lg bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-sm hover:bg-red-600"
+                      className="bg-red-600 text-white text-xs px-3 py-1 rounded-lg hover:bg-red-700"
                     >
                       Delete
                     </button>
