@@ -78,3 +78,27 @@ export const POST = apiHandler(async (req: Request) => {
     new ApiResponse(201, payment, "Payment created successfully")
   );
 });
+
+export const GET = apiHandler(async (_req: Request) => {
+  const payments = await prisma.payment.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      student: {
+        select: {
+          id: true,
+          stid: true,
+          studentName: true,
+          mobileNumber: true,
+          abroadMasters: true,
+          serviceCharge: true,
+          status: true,
+        },
+      },
+    },
+  });
+  if (!payments) throw new ApiError(404, "No payments found");
+
+  return NextResponse.json(
+    new ApiResponse(200, payments, "payment fetched successfully")
+  );
+});
