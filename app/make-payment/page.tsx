@@ -4,38 +4,22 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-const mockPayments = [
-  {
-    id: "1",
-    studentName: "KUCHIPATLA AKSHITHA REDDY",
-    mobile: "6281223792",
-    email: "akshithareddy@gmail.com",
-    masters: "ABROADMASTERS-USA",
-    serviceFee: 10000,
-    status: "Approved",
-  },
-  {
-    id: "2",
-    studentName: "CHEEDALLA ASHWITHA",
-    mobile: "6281364596",
-    email: "cheedalla@gmail.com",
-    masters: "ABROADMASTERS-USA",
-    serviceFee: 10000,
-    status: "Approved",
-  },
-];
+
 
 export default function MakePaymentPage() {
   const router = useRouter();
-
+  const [collapsed, setCollapsed] = useState(false);
   return (
-    <div className="flex min-h-screen bg-slate-100">
-      <Sidebar />
+    <div className="flex w-full bg-slate-100">
+      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
 
-      <div className="flex flex-1 flex-col">
-        <TopNav />
-
+      <div className="flex-1">
+        <TopNav
+          sidebarCollapsed={collapsed}
+          onToggleSidebar={() => setCollapsed((c) => !c)}
+        />
         <main className="p-6">
           <h1 className="text-2xl font-semibold mb-6">Make Payments</h1>
 

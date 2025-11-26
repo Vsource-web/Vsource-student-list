@@ -98,6 +98,8 @@ export default function RegistrationForm({
       } else {
         await studentRegistrationService.create(data);
         alert("Student Registered Successfully");
+        reset();
+        setValue("registrationDate", todayStr);
       }
     } catch (e: any) {
       alert(e?.response?.data?.error || "Failed to submit");
