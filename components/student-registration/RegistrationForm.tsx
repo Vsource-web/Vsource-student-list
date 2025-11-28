@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
   studentRegistrationSchema,
@@ -54,9 +55,9 @@ export default function RegistrationForm({
   id,
 }: RegistrationFormProps) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
 
   const academicYearOptions = useMemo(() => generateAcademicYearOptions(), []);
+  const queryClient = useQueryClient();
 
   const {
     register,
@@ -71,6 +72,13 @@ export default function RegistrationForm({
     reValidateMode: "onChange",
     defaultValues: mode === "edit" ? defaultValues : undefined,
   });
+  // Load student data when editing
+  const { data: editStudent, isLoading: editLoading } = useQuery({
+    queryKey: ["student-registration", id],
+    queryFn: () =>
+      studentRegistrationService.getById(id!).then((res) => res.data),
+    enabled: mode === "edit" && !!id,
+  });
 
   // state is needed to compute districts
   const stateValue = watch("state");
@@ -78,37 +86,77 @@ export default function RegistrationForm({
 
   const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
 
-  // only auto-set registration date on CREATE
   useEffect(() => {
-    if (mode === "create") {
-      setValue("registrationDate", todayStr, {
-        shouldValidate: true,
-        shouldDirty: true,
+    if (editStudent && mode === "edit") {
+      Object.keys(editStudent).forEach((key) => {
+        // only set values that exist in form schema
+        if (editStudent[key] !== undefined) {
+          setValue(key as any, editStudent[key]);
+        }
       });
     }
-  }, [mode, setValue, todayStr]);
+  }, [editStudent, mode, setValue]);
+  const createMutation = useMutation({
+    mutationFn: (payload: FormData) =>
+      studentRegistrationService.create(payload).then((res) => res.data),
+    onSuccess: (created) => {
+      alert("Student Registered Successfully");
 
-  const onSubmit = async (data: FormData) => {
-    setLoading(true);
-    try {
-      const payload: FormData = {
-        ...data,
-        serviceCharge: Number(data.serviceCharge || 0),
-      };
+      // 🔹 Update list cache immediately (append new record)
+      queryClient.setQueryData<any[]>(["student-registrations"], (old) => {
+        if (!old) return [created];
+        return [...old, created];
+      });
 
-      if (mode === "edit" && id) {
-        await studentRegistrationService.update(id, payload);
-        alert("Student updated successfully");
-        router.push("/student-registration-list");
-      } else {
-        await studentRegistrationService.create(payload);
-        alert("Student Registered Successfully");
-        setValue("registrationDate", todayStr);
-      }
-    } catch (e: any) {
-      alert(e?.response?.data?.error || "Failed to submit");
-    } finally {
-      setLoading(false);
+      // Also mark query stale (will refetch if you ever want)
+      queryClient.invalidateQueries({ queryKey: ["student-registrations"] });
+
+      setValue("registrationDate", todayStr);
+    },
+
+    onError: (err: any) => {
+      alert(err?.response?.data?.error || "Failed to create");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: FormData }) =>
+      studentRegistrationService.update(id, payload).then((res) => res.data),
+
+    onSuccess: (updated) => {
+      alert("Student updated successfully");
+
+      // Update cache
+      queryClient.setQueryData<any[]>(["student-registrations"], (old) => {
+        if (!old) return old;
+        return old.map((item) => (item.id === updated.id ? updated : item));
+      });
+
+      queryClient.setQueryData(["student-registration", id], updated);
+
+      // Mark query stale
+      queryClient.invalidateQueries({ queryKey: ["student-registrations"] });
+
+      // 🔥 FORCE PAGE RE-RENDER
+      router.refresh();
+
+      // Then navigate
+      router.push("/student-registration-list");
+    },
+  });
+
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  const onSubmit = (data: FormData) => {
+    const payload = {
+      ...data,
+      serviceCharge: Number(data.serviceCharge || 0),
+    };
+
+    if (mode === "edit" && id) {
+      updateMutation.mutate({ id, payload });
+    } else {
+      createMutation.mutate(payload);
     }
   };
 
@@ -894,26 +942,27 @@ export default function RegistrationForm({
                     </SelectItem> */}
                         {/* <SelectItem value="K RUCHITHA">K RUCHITHA</SelectItem> */}
                         <SelectItem value="B BHANU SAI PRAKASH">
-                          B BHANU SAI PRAK</SelectItem>
-                          <SelectItem value="MUNEER">MUNEER</SelectItem>
-                          <SelectItem value="Y VIJAY">Y VIJAY</SelectItem>
-                          <SelectItem value="S PAVAN KRISHNA">
-                            S PAVAN KRISHNA
-                          </SelectItem>
-                          <SelectItem value="A RAKESH">A RAKESH</SelectItem>
-                          <SelectItem value="S NAGA VENKATESH">
-                            S NAGA VENKATESH
-                          </SelectItem>
-                          <SelectItem value="M PAVAN KUMAR">
-                            M PAVAN KUMAR
-                          </SelectItem>
-                          <SelectItem value="R SUBRAHMANYAM">
-                            R SUBRAHMANYAM
-                          </SelectItem>
-                          <SelectItem value="A BHANU SAI RAM">
-                            A BHANU SAI RAM
-                          </SelectItem>
-                          <SelectItem value="U VINAY">U VINAY</SelectItem>
+                          B BHANU SAI PRAK
+                        </SelectItem>
+                        <SelectItem value="MUNEER">MUNEER</SelectItem>
+                        <SelectItem value="Y VIJAY">Y VIJAY</SelectItem>
+                        <SelectItem value="S PAVAN KRISHNA">
+                          S PAVAN KRISHNA
+                        </SelectItem>
+                        <SelectItem value="A RAKESH">A RAKESH</SelectItem>
+                        <SelectItem value="S NAGA VENKATESH">
+                          S NAGA VENKATESH
+                        </SelectItem>
+                        <SelectItem value="M PAVAN KUMAR">
+                          M PAVAN KUMAR
+                        </SelectItem>
+                        <SelectItem value="R SUBRAHMANYAM">
+                          R SUBRAHMANYAM
+                        </SelectItem>
+                        <SelectItem value="A BHANU SAI RAM">
+                          A BHANU SAI RAM
+                        </SelectItem>
+                        <SelectItem value="U VINAY">U VINAY</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -929,10 +978,14 @@ export default function RegistrationForm({
 
           <Button
             type="submit"
-            disabled={loading}
+            disabled={isSubmitting}
             className="w-full rounded-xl"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Submit"}
+            {isSubmitting ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              "Submit"
+            )}
           </Button>
         </form>
       </Card>

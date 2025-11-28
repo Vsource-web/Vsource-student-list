@@ -47,7 +47,6 @@ export default function StudentRegistrationList() {
     const res = await api.get("/api/student-registration");
     return res.data.data || [];
   };
-
   const {
     data = [],
     isLoading,
