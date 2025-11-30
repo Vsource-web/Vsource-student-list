@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { ApiResponse } from "@/utils/ApiResponse";
 
+export const dynamic = "force-dynamic";
+
 export const GET = apiHandler(async () => {
   const token = cookies().get("token")?.value;
 

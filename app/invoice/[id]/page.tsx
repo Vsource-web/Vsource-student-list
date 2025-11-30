@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import api from "@/lib/axios";
 import { InvoiceModal } from "@/components/invoice/InvoiceModal";
+import axios from "axios";
 // import InvoiceModal from "@/components/invoice/InvoiceModal";
 
 export default function InvoicePage({ params }: any) {
@@ -12,8 +12,8 @@ export default function InvoicePage({ params }: any) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    api
-      .get(`/api/payment/${id}`)
+    axios
+      .get(`/api/payment/${id}`, { withCredentials: true })
       .then((res) => setData(res.data.data))
       .catch(() => setError(true));
   }, [id]);
