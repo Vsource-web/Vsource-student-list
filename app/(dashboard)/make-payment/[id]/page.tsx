@@ -133,8 +133,8 @@ export default function PaymentFormPage() {
         title: "Payment Successful",
         description: "Payment entry created.",
       });
-      queryClient.invalidateQueries({ queryKey: ["payments", id] });
-      window.location.reload();
+      queryClient.invalidateQueries({ queryKey: ["student", id] });
+      // window.location.reload();
       router.push("/make-payment");
     },
     onError: (error: any) => {
