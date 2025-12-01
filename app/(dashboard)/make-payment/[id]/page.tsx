@@ -81,24 +81,25 @@ export default function PaymentFormPage() {
     queryFn: ({ queryKey }) => fetchStudent(queryKey[1] as string),
     enabled: !!id,
   });
-
   useEffect(() => {
     if (feeType === "service-fee") {
       const base = Number(amount) || 0;
-      const gst = Number(gstPercent) || 0;
+      const gst = 18; // FIXED 18%
 
-      if (base > 0 && gst > 0) {
+      setGstPercent(gst);
+
+      if (base > 0) {
         const calcGstAmount = (base * gst) / 100;
         setGstAmount(Number(calcGstAmount.toFixed(2)));
       } else {
         setGstAmount(0);
       }
     } else {
-      // if not service-fee, clear GST fields
+      // not service-fee → no gst
       setGstPercent(0);
       setGstAmount(0);
     }
-  }, [feeType, amount, gstPercent]);
+  }, [feeType, amount]);
 
   useEffect(() => {
     if (isStudentError) {
@@ -205,28 +206,15 @@ export default function PaymentFormPage() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
-              {feeType === "service-fee" && (
+              {/* {feeType === "service-fee" && (
                 <>
-                  <div className="grid grid-cols-2 gap-4 border p-3 rounded-lg bg-slate-50">
-                    <Input
-                      type="number"
-                      className="h-9"
-                      placeholder="GST %"
-                      value={gstPercent === 0 ? "" : gstPercent}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setGstPercent(v === "" ? 0 : Math.max(0, Number(v)));
-                      }}
-                    />
-
-                    <Input
-                      type="number"
-                      className="h-9"
-                      placeholder="GST Amount"
-                      value={gstAmount === 0 ? "" : gstAmount}
-                      readOnly
-                    />
+                  <div className="border p-3 rounded-lg bg-slate-50 text-sm">
+                    <p className="font-medium">GST (18%): {gstAmount}</p>
+                    <p className="font-medium">
+                      Total with GST: {Number(amount) + gstAmount || 0}
+                    </p>
                   </div>
+
                   <p className="text-sm font-medium text-right">
                     Total with GST:{" "}
                     {amount && gstAmount
@@ -236,7 +224,7 @@ export default function PaymentFormPage() {
                       : "--"}
                   </p>
                 </>
-              )}
+              )} */}
               {needsReferenceNo && (
                 <Input
                   className="h-9"
