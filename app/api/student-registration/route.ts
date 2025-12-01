@@ -99,6 +99,7 @@ export const POST = apiHandler(async (req: Request, context: any) => {
       officeCity: body.officeCity || "",
       assigneeName: body.assigneeName || "",
       passportNumber: body.passportNumber || null,
+      createdBy: body.createdBy || null,
       ...(body.status ? { status: body.status } : {}),
     },
   });

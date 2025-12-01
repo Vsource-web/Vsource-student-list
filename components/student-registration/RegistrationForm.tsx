@@ -117,10 +117,15 @@ export default function RegistrationForm({
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   const onSubmit = (data: FormData) => {
+    if (!user?.id) {
+      toast.error("User session not loaded");
+      return;
+    }
+
     const payload = {
       ...data,
       serviceCharge: Number(data.serviceCharge || 0),
-      createdBy: user?.id,
+      createdBy: user.id, // REQUIRED (foreign key)
     };
 
     if (mode === "edit" && id) {
@@ -341,7 +346,7 @@ export default function RegistrationForm({
                         </SelectTrigger>
                         <SelectContent className="z-50 bg-white">
                           <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-                          <SelectItem value="HOLD">Hold</SelectItem>
+                          {/* <SelectItem value="HOLD">Hold</SelectItem> */}
                           <SelectItem value="CANCELLED">Cancelled</SelectItem>
                         </SelectContent>
                       </Select>

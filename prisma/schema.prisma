@@ -84,7 +84,7 @@ model StudentRegistration {
   assigneeName     String
   passportNumber   String?
 
-  status RegistrationStatus @default(HOLD)
+  status RegistrationStatus @default(CONFIRMED)
 
   payment Payment?
 
@@ -98,7 +98,6 @@ model StudentRegistration {
 
 enum RegistrationStatus {
   CONFIRMED
-  HOLD
   CANCELLED
 }
 
