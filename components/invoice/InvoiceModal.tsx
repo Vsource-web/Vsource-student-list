@@ -21,12 +21,95 @@ const splitGST = (state: string | undefined, totalGst: number) => {
 export function InvoiceModal({ data, onClose }: any) {
   if (!data) return null;
   const invoiceRef = useRef<HTMLDivElement | null>(null);
-
+  // Convert inclusive GST amount into base + gst
+  const calculateFromInclusiveGST = (inclusive: number, gstRate = 18) => {
+    const factor = 1 + gstRate / 100;
+    const base = inclusive / factor;
+    const gst = inclusive - base;
+    return {
+      baseAmount: Number(base.toFixed(2)),
+      gstAmount: Number(gst.toFixed(2)),
+    };
+  };
   const p = data;
   const s = p.student;
-  const gst = splitGST(s.state, p.gstAmount || 0);
+  const inclusiveAmount = p.amount;
+  const { baseAmount, gstAmount } = calculateFromInclusiveGST(
+    inclusiveAmount,
+    p.gst
+  );
+
+  const gst = splitGST(s.state, gstAmount);
+
   function numberToWordsFormatted(num: number) {
-    return toWords(num).replace(/,/g, "").toUpperCase();
+    const a = [
+      "",
+      "ONE",
+      "TWO",
+      "THREE",
+      "FOUR",
+      "FIVE",
+      "SIX",
+      "SEVEN",
+      "EIGHT",
+      "NINE",
+      "TEN",
+      "ELEVEN",
+      "TWELVE",
+      "THIRTEEN",
+      "FOURTEEN",
+      "FIFTEEN",
+      "SIXTEEN",
+      "SEVENTEEN",
+      "EIGHTEEN",
+      "NINETEEN",
+    ];
+    const b = [
+      "",
+      "",
+      "TWENTY",
+      "THIRTY",
+      "FORTY",
+      "FIFTY",
+      "SIXTY",
+      "SEVENTY",
+      "EIGHTY",
+      "NINETY",
+    ];
+
+    if ((num = num.toString() as any).length > 9) return "OUT OF RANGE";
+
+    const n = ("000000000" + num)
+      .substr(-9)
+      .match(/^(\d{2})(\d{2})(\d{2})(\d{3})$/);
+    if (!n) return "";
+
+    let str = "";
+    const crore = +n[1];
+    const lakh = +n[2];
+    const thousand = +n[3];
+    const hundred = +n[4];
+
+    if (crore)
+      str +=
+        (a[crore] || b[Math.floor(crore / 10)] + " " + a[crore % 10]) +
+        " CRORE ";
+
+    if (lakh)
+      str +=
+        (a[lakh] || b[Math.floor(lakh / 10)] + " " + a[lakh % 10]) + " LAKH ";
+
+    if (thousand)
+      str +=
+        (a[thousand] || b[Math.floor(thousand / 10)] + " " + a[thousand % 10]) +
+        " THOUSAND ";
+
+    if (hundred)
+      str +=
+        (a[hundred] || b[Math.floor(hundred / 10)] + " " + a[hundred % 10]) +
+        " ";
+
+    return str.trim();
   }
 
   const handlePrint = () => {
@@ -125,9 +208,17 @@ export function InvoiceModal({ data, onClose }: any) {
             {s.fathersName}
           </p>
           <p className="text-sm">
-            ADDRESS: H NO:- {s.addressLine1 || "Not Provided"}{" "}
-            {s.addressLine2 || "Not Provided"} <br />
-            {s.mobileNumber} {"/"} {s.parentMobile}
+            ADDRESS:
+            {s.addressLine1 && ` ${s.addressLine1},`}
+            {s.addressLine2 && ` ${s.addressLine2},`}
+            {s.district && ` ${s.district},`}
+            {s.city && ` ${s.city},`}
+            {s.state && ` ${s.state},`}
+            {s.country && ` ${s.country},`}
+            {s.pincode && ` ${s.pincode}`}
+            <br />
+            {s.mobileNumber}
+            {s.parentMobile ? ` / ${s.parentMobile}` : ""}
           </p>
         </div>
 
@@ -161,7 +252,9 @@ export function InvoiceModal({ data, onClose }: any) {
 
               <td className="border border-black p-1">1</td>
 
-              <td className="border border-black p-1">{p.amount}</td>
+              <td className="border border-black p-1">
+                {baseAmount.toFixed(2)}
+              </td>
 
               <td className="border border-black p-1">{gst.igst}</td>
 
@@ -170,7 +263,7 @@ export function InvoiceModal({ data, onClose }: any) {
               <td className="border border-black p-1">{gst.sgst}</td>
 
               <td className="border border-black p-1">
-                {(p.amount + (p.gstAmount || 0)).toFixed(2)}
+                {inclusiveAmount.toFixed(2)}
               </td>
             </tr>
 
@@ -180,7 +273,7 @@ export function InvoiceModal({ data, onClose }: any) {
                 TOTAL
               </td>
               <td className="border border-black p-1">
-                {(p.amount + (p.gstAmount || 0)).toFixed(2)}
+                {inclusiveAmount.toFixed(2)}
               </td>
             </tr>
           </tbody>
@@ -192,8 +285,7 @@ export function InvoiceModal({ data, onClose }: any) {
           <div className="p-3 border-r border-black">
             <p className="font-bold uppercase">AMOUNT</p>
             <p className="italic mt-1">
-              {numberToWordsFormatted(p.amount + (p.gstAmount || 0))} RUPEES
-              ONLY
+              {numberToWordsFormatted(inclusiveAmount)} RUPEES ONLY
             </p>
             <p className="text-sm mt-1">
               ({p.paymentMethod.toUpperCase()}:{p.referenceNo})
