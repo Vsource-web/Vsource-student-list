@@ -186,6 +186,7 @@ export const GET = apiHandler(async (req: Request) => {
           mobileNumber: true,
           email: true,
           assigneeName: true,
+          abroadMasters: true,
           counselorName: true,
           processedBy: true,
           officeCity: true,
