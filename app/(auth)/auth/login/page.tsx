@@ -28,15 +28,28 @@ export default function LoginPage() {
 
   useEffect(() => {
     const lockEmail = localStorage.getItem("lockEmail");
-
     if (!lockEmail) return;
 
-    if (lockEmail) {
-      router.replace("/account-locked");
-    } else {
-      localStorage.removeItem("lockEmail");
-    }
-  }, []);
+    const checkStatus = async () => {
+      try {
+        const res = await authService.checkLockout(lockEmail);
+
+        if (res?.data?.data?.locked === true) {
+          router.replace("/account-locked");
+          return;
+        }
+
+        localStorage.removeItem("lockEmail");
+        router.replace("/auth/login");
+      } catch (err) {
+        toast.error(
+          "Unable to verify your account status. Please check your connection and try again."
+        );
+      }
+    };
+
+    checkStatus();
+  }, [router]);
 
   const handleStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,13 +63,13 @@ export default function LoginPage() {
       setStep(2);
       localStorage.removeItem("lockEmail");
     } catch (err: any) {
-      if (err.response?.data?.data?.redirect) {
+      const apiData = err.response?.data;
+      if (apiData?.data?.locked === true) {
         localStorage.setItem("lockEmail", form1.email);
-
-        router.push("/account-locked");
+        router.replace("/account-locked");
         return;
       }
-      setError(err?.response?.data?.message || "Invalid credentials");
+      setError(apiData?.message || "Invalid credentials");
     } finally {
       setLoading(false);
     }
@@ -102,22 +115,21 @@ export default function LoginPage() {
       const redirectMap: Record<string, string> = {
         Admin: "/dashboard",
         SUB_ADMIN: "/student-registration",
-        Accounts: "/transactions",
+        Accounts: "/dashboard",
       };
 
       toast.success(res?.data?.message || "Logged in Successfully");
       localStorage.removeItem("lockEmail");
       router.push(redirectMap[role] || "/dashboard");
     } catch (err: any) {
-      console.log(err);
-      if (err.response?.data?.data?.redirect) {
+      const apiData = err.response?.data;
+      if (apiData?.data?.locked === true) {
         localStorage.setItem("lockEmail", form1.email);
-
-        router.push(err.response.data.data.redirect);
+        router.replace("/account-locked");
         return;
       }
-      toast.error(err?.response?.data?.message || "Attempt Failed");
-      setError(err?.response?.data?.message || "Login failed");
+      toast.error(apiData?.message || "Attempt Failed");
+      setError(apiData?.message || "Invalid credentials");
     } finally {
       setLoading(false);
     }
@@ -215,7 +227,7 @@ export default function LoginPage() {
 
                       if (!validatePassword(value)) {
                         setPasswordError(
-                          "Password must contain 8+ chars, 1 uppercase, 1 lowercase, 1 number, 1 special character"
+                          "Password must contain 8+ chars,  1 lowercase, 1 number, 1 special character"
                         );
                       } else {
                         setPasswordError(null);
