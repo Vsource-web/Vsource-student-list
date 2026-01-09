@@ -10,20 +10,43 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
-function generateInvoiceNumber(lastInvoice?: string) {
-  const currentYear = new Date().getFullYear();
-  const nextYear = currentYear + 1;
-  const shortYear = currentYear.toString().slice(2);
-  const shortNext = nextYear.toString().slice(2);
-  const yearRange = `${shortYear}-${shortNext}`;
+function getFinancialYearInfo(date = new Date()) {
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
 
-  let nextNumber = 1;
-  if (lastInvoice) {
-    const match = lastInvoice.match(/B(\d+)$/);
-    nextNumber = match ? parseInt(match[1]) + 1 : 1;
+  // FY starts on April 1
+  if (month >= 4) {
+    return {
+      startYear: year,
+      endYear: year + 1,
+      prefix: "S",
+    };
   }
 
-  return `VV/${yearRange}/B${nextNumber.toString().padStart(2, "0")}`;
+  return {
+    startYear: year - 1,
+    endYear: year,
+    prefix: "B",
+  };
+}
+
+function generateInvoiceNumber(lastInvoice?: string, date = new Date()) {
+  const { startYear, endYear, prefix } = getFinancialYearInfo(date);
+
+  const fy = `${startYear.toString().slice(2)}-${endYear
+    .toString()
+    .slice(2)}`;
+
+  let nextNumber = 1;
+
+  if (lastInvoice) {
+    const match = lastInvoice.match(/([A-Z])(\d+)$/);
+    if (match) {
+      nextNumber = parseInt(match[2], 10) + 1;
+    }
+  }
+
+  return `VV/${fy}/${prefix}${nextNumber.toString().padStart(2, "0")}`;
 }
 
 export const POST = apiHandler(async (req: Request) => {
@@ -43,40 +66,34 @@ export const POST = apiHandler(async (req: Request) => {
   }
 
   const token = cookies().get("token")?.value;
-  let currentUser: { id: string; role: string | null } | null = null;
-
   if (!token) throw new ApiError(401, "Not authenticated");
 
   let decoded: any;
+  let currentUser: { id: string; role: string | null } | null = null;
 
   try {
     decoded = jwt.verify(token, process.env.JWT_SECRET!);
     currentUser = await prisma.user.findUnique({
       where: { id: decoded.id },
-      select: {
-        id: true,
-        role: true,
-      },
+      select: { id: true, role: true },
     });
-  } catch (error) {
+  } catch {
     throw new ApiError(401, "Invalid or expired token");
   }
 
-  if (body.amount <= 0) {
-    throw new ApiError(400, "Amount must be greater than zero");
-  }
+  if (!currentUser) throw new ApiError(401, "User not found");
+  if (body.amount <= 0) throw new ApiError(400, "Amount must be greater than zero");
 
   const student = await prisma.studentRegistration.findUnique({
     where: { id: body.studentId },
   });
 
   if (!student) throw new ApiError(404, "Student not found");
-
   if (student.status !== "CONFIRMED") {
     throw new ApiError(400, "Payment allowed only for confirmed students");
   }
 
-  // 🔢 Check how much is already paid for this student
+  // 🔢 Already paid amount
   const aggregate = await prisma.payment.aggregate({
     _sum: { amount: true },
     where: {
@@ -89,51 +106,54 @@ export const POST = apiHandler(async (req: Request) => {
   const totalFee = student.serviceCharge;
   const remaining = totalFee - alreadyPaid;
 
-  // ✅ If already fully paid → show "payment existing" type error
   if (remaining <= 0) {
     throw new ApiError(400, "Payment already exists for this student");
   }
 
-  // ✅ If trying to pay more than remaining → block
   if (body.amount > remaining) {
     throw new ApiError(
       400,
       `Payment exceeds remaining amount. Remaining: ${remaining}`
     );
   }
-
-  const currentYear = new Date().getFullYear();
-  const nextYear = currentYear + 1;
-  const shortYear = currentYear.toString().slice(2);
-  const shortNext = nextYear.toString().slice(2);
-  const yearRange = `${shortYear}-${shortNext}`;
+  const { startYear, endYear, prefix } = getFinancialYearInfo();
+  const fy = `${startYear.toString().slice(2)}-${endYear
+    .toString()
+    .slice(2)}`;
 
   const payment = await prisma.$transaction(async (tx) => {
     const lastPayment = await tx.payment.findFirst({
       where: {
-        invoiceNumber: { startsWith: `VV/${yearRange}/` },
+        invoiceNumber: {
+          startsWith: `VV/${fy}/${prefix}`,
+        },
       },
       orderBy: { invoiceNumber: "desc" },
     });
 
-    let nextInvoiceNumber = generateInvoiceNumber(lastPayment?.invoiceNumber);
+    let nextInvoiceNumber = generateInvoiceNumber(
+      lastPayment?.invoiceNumber
+    );
 
+    // Collision safety (rare but safe)
     let exists = await tx.payment.findUnique({
       where: { invoiceNumber: nextInvoiceNumber },
     });
 
     while (exists) {
-      const match = nextInvoiceNumber.match(/B(\d+)$/);
-      let num = match ? parseInt(match[1]) + 1 : 1;
-      nextInvoiceNumber = `VV/${yearRange}/B${num
+      const match = nextInvoiceNumber.match(/([A-Z])(\d+)$/);
+      const num = match ? parseInt(match[2], 10) + 1 : 1;
+
+      nextInvoiceNumber = `VV/${fy}/${prefix}${num
         .toString()
         .padStart(2, "0")}`;
+
       exists = await tx.payment.findUnique({
         where: { invoiceNumber: nextInvoiceNumber },
       });
     }
 
-    return await tx.payment.create({
+    return tx.payment.create({
       data: {
         feeType: body.feeType,
         subFeeType: body.subFeeType || null,
@@ -149,11 +169,10 @@ export const POST = apiHandler(async (req: Request) => {
       },
     });
   });
-
   await prisma.auditLog.create({
     data: {
-      userId: currentUser?.id || null,
-      role: currentUser?.role || null,
+      userId: currentUser.id,
+      role: currentUser.role,
       action: "CREATE",
       module: "Payment",
       recordId: payment.id,
@@ -171,10 +190,9 @@ export const POST = apiHandler(async (req: Request) => {
     new ApiResponse(201, payment, "Payment created successfully")
   );
 });
-
 export const GET = apiHandler(async (req: Request) => {
   const { searchParams } = new URL(req.url);
-  const status = searchParams?.get("status") as PaymentStatus | null;
+  const status = searchParams.get("status") as PaymentStatus | null;
 
   const token = cookies().get("token")?.value;
   if (!token) throw new ApiError(401, "Not authenticated");
@@ -188,14 +206,13 @@ export const GET = apiHandler(async (req: Request) => {
       where: { id: decoded.id },
       select: { id: true, role: true },
     });
-
-    if (!currentUser) throw new ApiError(401, "User not found");
-  } catch (error) {
+  } catch {
     throw new ApiError(401, "Invalid or expired token");
   }
 
-  // 🔍 Dynamic filters
-  let filters: any = {};
+  if (!currentUser) throw new ApiError(401, "User not found");
+
+  const filters: any = {};
   if (status) filters.status = status;
 
   if (currentUser.role !== "Admin" && currentUser.role !== "Accounts") {
@@ -224,9 +241,11 @@ export const GET = apiHandler(async (req: Request) => {
     },
   });
 
-  const message = payments.length
-    ? "payment fetched successfully"
-    : "No payments found";
-
-  return NextResponse.json(new ApiResponse(200, payments, message));
+  return NextResponse.json(
+    new ApiResponse(
+      200,
+      payments,
+      payments.length ? "payment fetched successfully" : "No payments found"
+    )
+  );
 });
